@@ -1,0 +1,60 @@
+---
+title: "PS320 Research"
+output: github_document
+date: "2024-05-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+library(stringr)
+
+# Load the dataset
+data <- read.csv('filtered_research_data.csv')
+
+```
+
+```{r}
+
+data <- data %>% 
+  select(event_date, actor1, fatalities) %>% 
+  filter(!str_detect(actor1, 'Military Forces of Israel')) %>% 
+  mutate(event_date = as.Date(event_date, format = "%d %B %Y"),
+         year = year(event_date),
+         year_month = paste(year, month(event_date), sep = '-')) %>% 
+  filter(year != 2024) %>% 
+  group_by(year_month) %>% 
+  summarise(
+    year = year,
+    total_fatalities = sum(fatalities),
+    frequency = n()) %>% 
+  ungroup()
+
+economic_data = data.frame(
+  year = 2016:2023,
+  unemployment_rate = c(9.7, 10.2, 10.7, 11.3, 13.3, 12.8, 11.7, 11.7), 
+  inflation_rate = c(-0.82, 4.48, 6.07, 2.9, 84.9, 154.8, 171.21, 221.3),
+  corruption_index = c(28, 28, 28, 28, 25, 24, 24, 24), 
+  govt_effectiveness = c(47, 49, 41, 36, 20, 16, 15, 15),
+  gdp_growth_rate = c(1.6, 0.9, -1.9, -6.9, -21.4, -7, -7, -7)
+)
+
+data = merge(data, economic_data, by = "year", all.x = TRUE)
+
+```
+
+```{r}
+
+model = lm(frequency*total_fatalities ~ inflation_rate*unemployment_rate + govt_effectiveness, data=data)
+
+summary(model)
+
+
+```
+
